@@ -1,0 +1,284 @@
+import React, { useState, useEffect } from 'react';
+import { 
+  Sprout, 
+  Droplets, 
+  Calendar, 
+  Camera, 
+  Plus, 
+  Trash2, 
+  ChevronRight, 
+  CheckCircle2, 
+  Leaf, 
+  ClipboardList 
+} from 'lucide-react';
+
+// --- モックデータ (初期表示用) ---
+const INITIAL_PLANTS = [
+  {
+    id: 1,
+    name: 'アイコ（ミニトマト）',
+    category: '果菜類',
+    plantedDate: '2024-03-15',
+    harvestEstimate: 70, // 収穫までの目安日数
+    lastWatered: '2024-04-20',
+    status: '順調',
+    color: 'bg-red-100 text-red-600'
+  },
+  {
+    id: 2,
+    name: 'サラダ菜',
+    category: '葉菜類',
+    plantedDate: '2024-04-01',
+    harvestEstimate: 40,
+    lastWatered: '2024-04-21',
+    status: '成長中',
+    color: 'bg-green-100 text-green-600'
+  }
+];
+
+const App = () => {
+  const [plants, setPlants] = useState(INITIAL_PLANTS);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [newPlant, setNewPlant] = useState({ name: '', category: '葉菜類', plantedDate: '', harvestEstimate: 60 });
+
+  // 進捗率の計算
+  const calculateProgress = (plantedDate, estimate) => {
+    const start = new Date(plantedDate);
+    const today = new Date();
+    const diffTime = Math.abs(today - start);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    const progress = Math.min(Math.round((diffDays / estimate) * 100), 100);
+    return { progress, diffDays };
+  };
+
+  const addPlant = (e) => {
+    e.preventDefault();
+    const id = Date.now();
+    const categories = {
+      '葉菜類': 'bg-green-100 text-green-600',
+      '果菜類': 'bg-red-100 text-red-600',
+      '根菜類': 'bg-orange-100 text-orange-600'
+    };
+    setPlants([...plants, { 
+      ...newPlant, 
+      id, 
+      status: '成長中', 
+      lastWatered: '未記録',
+      color: categories[newPlant.category] || 'bg-blue-100 text-blue-600'
+    }]);
+    setIsModalOpen(false);
+    setNewPlant({ name: '', category: '葉菜類', plantedDate: '', harvestEstimate: 60 });
+  };
+
+  const deletePlant = (id) => {
+    if (confirm('この記録を削除してもよろしいですか？')) {
+      setPlants(plants.filter(p => p.id !== id));
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50 text-gray-900 font-sans">
+      {/* Header */}
+      <header className="bg-white border-b sticky top-0 z-10 px-4 py-3 flex justify-between items-center">
+        <div className="flex items-center gap-2">
+          <div className="p-2 bg-green-600 rounded-lg">
+            <Sprout className="text-white w-6 h-6" />
+          </div>
+          <h1 className="text-xl font-bold text-gray-800 tracking-tight">ベジトラッカー</h1>
+        </div>
+        <button 
+          onClick={() => setIsModalOpen(true)}
+          className="bg-green-600 hover:bg-green-700 text-white p-2 rounded-full shadow-lg transition-transform active:scale-95"
+        >
+          <Plus className="w-6 h-6" />
+        </button>
+      </header>
+
+      {/* Main Content */}
+      <main className="p-4 max-w-2xl mx-auto pb-24">
+        {/* Summary Stats */}
+        <div className="grid grid-cols-2 gap-4 mb-6">
+          <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+            <p className="text-sm text-gray-500 mb-1">栽培中</p>
+            <p className="text-2xl font-bold text-green-600">{plants.length} <span className="text-sm font-normal text-gray-400">種類</span></p>
+          </div>
+          <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+            <p className="text-sm text-gray-500 mb-1">本日のタスク</p>
+            <p className="text-2xl font-bold text-blue-600">3 <span className="text-sm font-normal text-gray-400">件</span></p>
+          </div>
+        </div>
+
+        <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
+          <Leaf className="w-5 h-5 text-green-500" />
+          マイ・ガーデン
+        </h2>
+
+        {/* Plant Cards */}
+        <div className="space-y-4">
+          {plants.map(plant => {
+            const { progress, diffDays } = calculateProgress(plant.plantedDate, plant.harvestEstimate);
+            return (
+              <div key={plant.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className="p-4">
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      <span className={`text-xs font-bold px-2 py-1 rounded-full ${plant.color} mb-2 inline-block`}>
+                        {plant.category}
+                      </span>
+                      <h3 className="text-lg font-bold text-gray-800">{plant.name}</h3>
+                      <p className="text-sm text-gray-400 flex items-center gap-1 mt-1">
+                        <Calendar className="w-3 h-3" />
+                        植え付け: {plant.plantedDate} (経過 {diffDays}日)
+                      </p>
+                    </div>
+                    <button 
+                      onClick={() => deletePlant(plant.id)}
+                      className="text-gray-300 hover:text-red-500 p-1"
+                    >
+                      <Trash2 className="w-5 h-5" />
+                    </button>
+                  </div>
+
+                  {/* Progress Bar */}
+                  <div className="mb-4">
+                    <div className="flex justify-between text-xs mb-1">
+                      <span className="text-gray-500 font-medium">収穫までの進捗</span>
+                      <span className="font-bold text-green-600">{progress}%</span>
+                    </div>
+                    <div className="w-full bg-gray-100 rounded-full h-2.5">
+                      <div 
+                        className="bg-green-500 h-2.5 rounded-full transition-all duration-1000" 
+                        style={{ width: `${progress}%` }}
+                      ></div>
+                    </div>
+                  </div>
+
+                  {/* Quick Actions */}
+                  <div className="flex gap-2 border-t pt-4">
+                    <button className="flex-1 flex flex-col items-center justify-center py-2 hover:bg-blue-50 rounded-xl transition-colors">
+                      <Droplets className="w-5 h-5 text-blue-500 mb-1" />
+                      <span className="text-[10px] text-gray-600 font-bold">水やり</span>
+                    </button>
+                    <button className="flex-1 flex flex-col items-center justify-center py-2 hover:bg-orange-50 rounded-xl transition-colors">
+                      <ClipboardList className="w-5 h-5 text-orange-500 mb-1" />
+                      <span className="text-[10px] text-gray-600 font-bold">追肥</span>
+                    </button>
+                    <button className="flex-1 flex flex-col items-center justify-center py-2 hover:bg-purple-50 rounded-xl transition-colors">
+                      <Camera className="w-5 h-5 text-purple-500 mb-1" />
+                      <span className="text-[10px] text-gray-600 font-bold">撮影</span>
+                    </button>
+                    <button className="flex-1 flex flex-col items-center justify-center py-2 hover:bg-green-50 rounded-xl transition-colors">
+                      <CheckCircle2 className="w-5 h-5 text-green-500 mb-1" />
+                      <span className="text-[10px] text-gray-600 font-bold">詳細</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {plants.length === 0 && (
+          <div className="text-center py-12 px-4 border-2 border-dashed border-gray-200 rounded-3xl">
+            <Sprout className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+            <p className="text-gray-400">まだ野菜が登録されていません。<br/>右上の「＋」ボタンから追加しましょう！</p>
+          </div>
+        )}
+      </main>
+
+      {/* Add Plant Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="p-6">
+              <h2 className="text-xl font-bold mb-4">新しい野菜を植える</h2>
+              <form onSubmit={addPlant} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-1">野菜の名前</label>
+                  <input 
+                    type="text" 
+                    required
+                    placeholder="例: こだわりトマト"
+                    className="w-full bg-gray-50 border-none rounded-xl p-3 focus:ring-2 focus:ring-green-500 outline-none"
+                    value={newPlant.name}
+                    onChange={e => setNewPlant({...newPlant, name: e.target.value})}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-1">カテゴリー</label>
+                    <select 
+                      className="w-full bg-gray-50 border-none rounded-xl p-3 focus:ring-2 focus:ring-green-500 outline-none"
+                      value={newPlant.category}
+                      onChange={e => setNewPlant({...newPlant, category: e.target.value})}
+                    >
+                      <option>葉菜類</option>
+                      <option>果菜類</option>
+                      <option>根菜類</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-1">収穫目安(日)</label>
+                    <input 
+                      type="number" 
+                      className="w-full bg-gray-50 border-none rounded-xl p-3 focus:ring-2 focus:ring-green-500 outline-none"
+                      value={newPlant.harvestEstimate}
+                      onChange={e => setNewPlant({...newPlant, harvestEstimate: parseInt(e.target.value)})}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-1">植え付け日</label>
+                  <input 
+                    type="date" 
+                    required
+                    className="w-full bg-gray-50 border-none rounded-xl p-3 focus:ring-2 focus:ring-green-500 outline-none"
+                    value={newPlant.plantedDate}
+                    onChange={e => setNewPlant({...newPlant, plantedDate: e.target.value})}
+                  />
+                </div>
+                <div className="flex gap-3 pt-2">
+                  <button 
+                    type="button"
+                    onClick={() => setIsModalOpen(false)}
+                    className="flex-1 py-3 font-bold text-gray-500 hover:bg-gray-100 rounded-xl transition-colors"
+                  >
+                    キャンセル
+                  </button>
+                  <button 
+                    type="submit"
+                    className="flex-1 py-3 font-bold text-white bg-green-600 hover:bg-green-700 rounded-xl shadow-lg transition-colors shadow-green-200"
+                  >
+                    登録する
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bottom Navigation (Decorative) */}
+      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t px-6 py-3 flex justify-between items-center max-w-2xl mx-auto">
+        <div className="flex flex-col items-center gap-1 text-green-600">
+          <Leaf className="w-6 h-6" />
+          <span className="text-[10px] font-bold">マイ菜園</span>
+        </div>
+        <div className="flex flex-col items-center gap-1 text-gray-400">
+          <Calendar className="w-6 h-6" />
+          <span className="text-[10px] font-bold">カレンダー</span>
+        </div>
+        <div className="flex flex-col items-center gap-1 text-gray-400">
+          <Camera className="w-6 h-6" />
+          <span className="text-[10px] font-bold">アルバム</span>
+        </div>
+        <div className="flex flex-col items-center gap-1 text-gray-400">
+          <ChevronRight className="w-6 h-6" />
+          <span className="text-[10px] font-bold">設定</span>
+        </div>
+      </nav>
+    </div>
+  );
+};
+
+export default App;
